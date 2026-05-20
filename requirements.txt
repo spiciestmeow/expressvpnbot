@@ -1,0 +1,5 @@
+pyTelegramBotAPI
+requests
+urllib3
+cryptography
+asn1crypto
