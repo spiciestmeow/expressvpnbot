@@ -3,3 +3,5 @@ requests
 urllib3
 cryptography
 asn1crypto
+telebot
+flask

@@ -11,7 +11,8 @@ import time
 import threading
 from datetime import datetime
 from typing import Dict, Any
-
+from flask import Flask
+import threading
 import requests
 import urllib3
 import telebot
@@ -262,6 +263,20 @@ DELAY = 12
 
 print("🤖 ExpressVPN Checker Bot Started on Render (Professional Mode)")
 
+# ====================== FLASK WEB SERVER FOR RENDER ======================
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "✅ ExpressVPN Checker Bot is running on Render!"
+
+@app.route('/health')
+def health():
+    return "OK", 200
+
+# ====================== BOT HANDLERS ======================
+
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.reply_to(message,
@@ -332,12 +347,24 @@ def handle_message(message):
     threading.Thread(target=process_all, daemon=True).start()
 
 
+# ====================== START BOT + WEB SERVER ======================
 if __name__ == "__main__":
-    print("🚀 Starting stable polling...")
-    while True:
-        try:
-            bot.infinity_polling(none_stop=True, interval=0, timeout=30, long_polling_timeout=30)
-        except Exception as e:
-            print(f"⚠️ Polling error: {e}")
-            print("🔄 Restarting in 5 seconds...")
-            time.sleep(5)
+    print("🚀 Starting ExpressVPN Checker Bot on Render...")
+
+    # Run the Telegram bot in a background thread (polling)
+    def run_bot():
+        print("🤖 Bot polling started")
+        while True:
+            try:
+                bot.infinity_polling(none_stop=True, interval=0, timeout=30, long_polling_timeout=30)
+            except Exception as e:
+                print(f"⚠️ Polling error: {e}")
+                print("🔄 Restarting polling in 5 seconds...")
+                time.sleep(5)
+
+    threading.Thread(target=run_bot, daemon=True).start()
+
+    # Start Flask web server (required by Render)
+    port = int(os.environ.get("PORT", 10000))
+    print(f"🌐 Web server listening on port {port}")
+    app.run(host="0.0.0.0", port=port)
