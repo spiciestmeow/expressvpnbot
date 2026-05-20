@@ -280,7 +280,6 @@ def health():
 def start(message):
     bot.reply_to(message,
                  "✅ <b>ExpressVPN Checker</b>\n\n"
-                 "🔥 Professional mode activated\n"
                  "Send your <b>email:password</b> combos (one per line).\n"
                  "I'll check them <b>one by one</b> with safety delay.\n\n"
                  "<i>Pro tip: You can send multiple at once.</i>",
@@ -298,7 +297,7 @@ def help_command(message):
 
 @bot.message_handler(commands=['status'])
 def status(message):
-    bot.reply_to(message, "✅ <b>Bot is running perfectly</b>\nRender + Flask + Professional Mode", parse_mode='HTML')
+    bot.reply_to(message, "✅ <b>Bot is running perfectly</b>", parse_mode='HTML')
 
 @bot.message_handler(func=lambda m: True)
 def handle_message(message):
@@ -339,13 +338,13 @@ def handle_message(message):
                 d = result['data']
                 reply = (
                     f"✅ <b>ExpressVPN Account Verified</b>\n\n"
-                    f"📧 <b>Email:</b> <code>{email}</code>\n\n"
+                    f"📧 <b>Email:</b> <code>{email}</code>\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"📌 <b>Plan:</b> {d.get('plan')}\n"
                     f"📅 <b>Expires:</b> {d.get('expire_date')} <i>({d.get('days_left')} days)</i>\n"
                     f"🔑 <b>License:</b> <code>{d.get('license')}</code>\n"
                     f"💳 <b>Payment:</b> {d.get('payment_method')}\n"
-                    f"🔄 <b>Auto Renew:</b> {'✅ Yes' if d.get('auto_renew') else '❌ No'}\n\n"
+                    f"🔄 <b>Auto Renew:</b> {'✅ Yes' if d.get('auto_renew') else '❌ No'}\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"🔐 <b>OVPN:</b> <code>{d.get('ovpn_user')}:{d.get('ovpn_pass')}</code>\n"
                     f"🔐 <b>PPTP:</b> <code>{d.get('pptp_user')}:{d.get('pptp_pass')}</code>"
