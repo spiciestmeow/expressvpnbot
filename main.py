@@ -253,12 +253,25 @@ class ExpressVPNChecker:
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+# ================== FORCE SUBSCRIBE ==================
+CHANNEL_USERNAME = '@yourchannel'          # ← CHANGE THIS TO YOUR CHANNEL
+CHANNEL_LINK = f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}"
+# =====================================================
+
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN environment variable is not set!")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 checker = ExpressVPNChecker()
 DELAY = 12
+
+def is_subscribed(user_id: int) -> bool:
+    """Check if user is member of your channel"""
+    try:
+        member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
+        return member.status in ['member', 'administrator', 'creator']
+    except Exception:
+        return False
 
 print("🤖 ExpressVPN Checker Bot Started on Render (Professional Mode)")
 
@@ -278,6 +291,20 @@ def health():
 
 @bot.message_handler(commands=['start'])
 def start(message):
+    if not is_subscribed(message.from_user.id):
+        markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+        join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
+        markup.add(join_btn)
+
+        bot.reply_to(
+            message,
+            "🚫 <b>You must join our channel first!</b>\n\n"
+            "After joining, send /start again.",
+            parse_mode='HTML',
+            reply_markup=markup
+        )
+        return
+
     bot.reply_to(message,
                  "✅ <b>ExpressVPN Checker</b>\n\n"
                  "🔥 Professional mode activated\n"
@@ -302,6 +329,20 @@ def status(message):
 
 @bot.message_handler(func=lambda m: True)
 def handle_message(message):
+    if not is_subscribed(message.from_user.id):
+        markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+        join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
+        markup.add(join_btn)
+
+        bot.reply_to(
+            message,
+            "🚫 <b>You must join the channel to use this bot!</b>",
+            parse_mode='HTML',
+            reply_markup=markup
+        )
+        return
+
+    # ←←← REST OF YOUR ORIGINAL CODE STARTS HERE (unchanged) ←←←
     text = message.text.strip()
     if not text:
         return
