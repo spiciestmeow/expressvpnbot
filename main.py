@@ -506,7 +506,7 @@ def handle_message(message):
 if __name__ == "__main__":
     print("🚀 Starting ExpressVPN Checker Bot on Render...")
 
-    # Run the Telegram bot in a background thread (polling)
+    # Run Telegram bot polling in background thread
     def run_bot():
         print("🤖 Bot polling started")
         while True:
@@ -514,17 +514,20 @@ if __name__ == "__main__":
                 bot.infinity_polling(
                     none_stop=True,
                     interval=0,
-                    timeout=30,
-                    long_polling_timeout=30,
+                    timeout=35,                # increased a bit
+                    long_polling_timeout=35,
                     allowed_updates=["message", "callback_query"]
                 )
             except Exception as e:
-                print(f"⚠️ Polling error: {e}")
-                print("🔄 Restarting polling in 5 seconds...")
+                if "409" in str(e):
+                    print("⚠️ 409 Conflict detected - Another instance is running. Restarting in 10s...")
+                    time.sleep(10)
+                else:
+                    print(f"⚠️ Polling error: {e}")
+                print("🔄 Restarting polling...")
                 time.sleep(5)
 
-    # Small delay to let Flask start first (improves stability)
-    time.sleep(1)
+    # Start bot in background
     threading.Thread(target=run_bot, daemon=True).start()
 
     # Start Flask web server (required by Render)
