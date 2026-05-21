@@ -270,10 +270,10 @@ def is_subscribed(user_id: int) -> bool:
     try:
         member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
         status = member.status
-        print(f"DEBUG: User {user_id} status in channel = {status}")
+        print(f"✅ DEBUG: User {user_id} status in @{CHANNEL_USERNAME} = {status}")  # This will appear in logs
         return status in ['member', 'administrator', 'creator', 'restricted']
     except Exception as e:
-        print(f"ERROR checking subscription for user {user_id}: {e}")
+        print(f"❌ ERROR checking subscription for user {user_id}: {type(e).__name__} - {e}")
         return False
     
 @bot.callback_query_handler(func=lambda call: call.data == "verify_join")
@@ -284,30 +284,43 @@ def verify_join(call):
     bot.answer_callback_query(call.id)
 
     if is_subscribed(user_id):
-        bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=call.message.message_id,
-            text="✅ <b>You have successfully joined the channel!</b>\n\n"
-                 "Welcome to <b>ExpressVPN Checker</b> 🔥\n\n"
-                 "Send your <b>email:password</b> combos now.",
-            parse_mode='HTML',
-            reply_markup=None
+        # Success
+        try:
+            bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=call.message.message_id,
+                text="✅ <b>You have successfully joined the channel!</b>\n\n"
+                     "Welcome to <b>ExpressVPN Checker</b> 🔥\n\n"
+                     "Send your <b>email:password</b> combos now.",
+                parse_mode='HTML',
+                reply_markup=None
+            )
+        except:
+            pass  # Ignore "message not modified" error
+
+        bot.send_message(
+            chat_id,
+            "🔥 <b>Bot is ready!</b>\nJust paste your combos.",
+            parse_mode='HTML'
         )
-        bot.send_message(chat_id, "🔥 <b>Bot is ready!</b>\nJust paste your combos.", parse_mode='HTML')
     else:
+        # Still not joined
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
         verify_btn = telebot.types.InlineKeyboardButton("✅ I Joined - Verify", callback_data="verify_join")
         markup.add(join_btn, verify_btn)
 
-        bot.edit_message_text(
-            chat_id=chat_id,
-            message_id=call.message.message_id,
-            text="🚫 <b>You still haven't joined the channel!</b>\n\n"
-                 "Please join @caysredirect first, then tap Verify again.",
-            parse_mode='HTML',
-            reply_markup=markup
-        )
+        try:
+            bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=call.message.message_id,
+                text="🚫 <b>You still haven't joined the channel!</b>\n\n"
+                     "Please join <b>@caysredirect</b> first, then tap Verify again.",
+                parse_mode='HTML',
+                reply_markup=markup
+            )
+        except:
+            pass  # Prevent 400 error from crashing the bot
 
 # ====================== FORCE SUBSCRIBE HELPER ======================
 def force_subscribe_markup():
