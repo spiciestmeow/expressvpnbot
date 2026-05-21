@@ -269,38 +269,32 @@ def is_subscribed(user_id: int) -> bool:
     """Check if user is member of your channel"""
     try:
         member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
-        return member.status in ['member', 'administrator', 'creator']
-    except Exception:
+        status = member.status
+        print(f"DEBUG: User {user_id} status in channel = {status}")
+        return status in ['member', 'administrator', 'creator', 'restricted']
+    except Exception as e:
+        print(f"ERROR checking subscription for user {user_id}: {e}")
         return False
     
-# ====================== NEW: VERIFY CALLBACK ======================
 @bot.callback_query_handler(func=lambda call: call.data == "verify_join")
 def verify_join(call):
     chat_id = call.message.chat.id
     user_id = call.from_user.id
 
-    bot.answer_callback_query(call.id)  # remove loading animation
+    bot.answer_callback_query(call.id)
 
     if is_subscribed(user_id):
-        # User joined successfully
         bot.edit_message_text(
             chat_id=chat_id,
             message_id=call.message.message_id,
             text="✅ <b>You have successfully joined the channel!</b>\n\n"
                  "Welcome to <b>ExpressVPN Checker</b> 🔥\n\n"
-                 "Send your <b>email:password</b> combos (one per line).",
+                 "Send your <b>email:password</b> combos now.",
             parse_mode='HTML',
             reply_markup=None
         )
-        # Optional: send the full start message
-        bot.send_message(
-            chat_id,
-            "🔥 <b>ExpressVPN Checker Ready</b>\n\n"
-            "Just paste your combos now!",
-            parse_mode='HTML'
-        )
+        bot.send_message(chat_id, "🔥 <b>Bot is ready!</b>\nJust paste your combos.", parse_mode='HTML')
     else:
-        # Still not joined
         markup = telebot.types.InlineKeyboardMarkup(row_width=1)
         join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
         verify_btn = telebot.types.InlineKeyboardButton("✅ I Joined - Verify", callback_data="verify_join")
@@ -309,8 +303,8 @@ def verify_join(call):
         bot.edit_message_text(
             chat_id=chat_id,
             message_id=call.message.message_id,
-            text="🚫 <b>You haven't joined the channel yet!</b>\n\n"
-                 "Please join first, then tap the Verify button again.",
+            text="🚫 <b>You still haven't joined the channel!</b>\n\n"
+                 "Please join @caysredirect first, then tap Verify again.",
             parse_mode='HTML',
             reply_markup=markup
         )
@@ -383,25 +377,6 @@ def help_command(message):
                  "I will check them one by one with safety delay.",
                  parse_mode='HTML')
 
-
-@bot.message_handler(commands=['status'])
-def status(message):
-    if not is_subscribed(message.from_user.id):
-        bot.reply_to(
-            message,
-            "🚫 <b>You must join the channel to use this bot!</b>",
-            parse_mode='HTML',
-            reply_markup=force_subscribe_markup()
-        )
-        return
-
-    bot.reply_to(message,
-                 "✅ <b>Bot Status: Running Perfectly</b>\n\n"
-                 "🔥 Professional Mode: Active\n"
-                 "⏳ Check Delay: 12 seconds\n"
-                 "📡 Force Subscribe: Enabled\n\n"
-                 "Ready to check ExpressVPN combos!",
-                 parse_mode='HTML')
 
 @bot.message_handler(commands=['status'])
 def status(message):
