@@ -254,7 +254,7 @@ class ExpressVPNChecker:
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # ================== FORCE SUBSCRIBE ==================
-CHANNEL_USERNAME = 'caysredirect'
+CHANNEL_USERNAME = 'caysredirect'          # ← Change only if needed
 CHANNEL_LINK = f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}"
 # =====================================================
 
@@ -272,6 +272,56 @@ def is_subscribed(user_id: int) -> bool:
         return member.status in ['member', 'administrator', 'creator']
     except Exception:
         return False
+    
+# ====================== NEW: VERIFY CALLBACK ======================
+@bot.callback_query_handler(func=lambda call: call.data == "verify_join")
+def verify_join(call):
+    chat_id = call.message.chat.id
+    user_id = call.from_user.id
+
+    bot.answer_callback_query(call.id)  # remove loading animation
+
+    if is_subscribed(user_id):
+        # User joined successfully
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=call.message.message_id,
+            text="✅ <b>You have successfully joined the channel!</b>\n\n"
+                 "Welcome to <b>ExpressVPN Checker</b> 🔥\n\n"
+                 "Send your <b>email:password</b> combos (one per line).",
+            parse_mode='HTML',
+            reply_markup=None
+        )
+        # Optional: send the full start message
+        bot.send_message(
+            chat_id,
+            "🔥 <b>ExpressVPN Checker Ready</b>\n\n"
+            "Just paste your combos now!",
+            parse_mode='HTML'
+        )
+    else:
+        # Still not joined
+        markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+        join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
+        verify_btn = telebot.types.InlineKeyboardButton("✅ I Joined - Verify", callback_data="verify_join")
+        markup.add(join_btn, verify_btn)
+
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=call.message.message_id,
+            text="🚫 <b>You haven't joined the channel yet!</b>\n\n"
+                 "Please join first, then tap the Verify button again.",
+            parse_mode='HTML',
+            reply_markup=markup
+        )
+
+# ====================== FORCE SUBSCRIBE HELPER ======================
+def force_subscribe_markup():
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
+    verify_btn = telebot.types.InlineKeyboardButton("✅ I Joined - Verify", callback_data="verify_join")
+    markup.add(join_btn, verify_btn)
+    return markup
 
 print("🤖 ExpressVPN Checker Bot Started on Render (Professional Mode)")
 
@@ -292,16 +342,12 @@ def health():
 @bot.message_handler(commands=['start'])
 def start(message):
     if not is_subscribed(message.from_user.id):
-        markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-        join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
-        markup.add(join_btn)
-
         bot.reply_to(
             message,
             "🚫 <b>You must join our channel first!</b>\n\n"
-            "After joining, send /start again.",
+            "Tap the button below to join, then tap <b>✅ Verify</b>.",
             parse_mode='HTML',
-            reply_markup=markup
+            reply_markup=force_subscribe_markup()
         )
         return
 
@@ -315,30 +361,74 @@ def start(message):
 
 @bot.message_handler(commands=['help'])
 def help_command(message):
-    bot.reply_to(message,
-                 "🛠 <b>Available Commands</b>\n\n"
-                 "/start — Restart the bot\n"
-                 "/help — Show this message\n"
-                 "/status — Check bot status\n\n"
-                 "Just send your combos anytime!",
-                 parse_mode='HTML')
-
-@bot.message_handler(commands=['status'])
-def status(message):
-    bot.reply_to(message, "✅ <b>Bot is running perfectly</b>", parse_mode='HTML')
-
-@bot.message_handler(func=lambda m: True)
-def handle_message(message):
     if not is_subscribed(message.from_user.id):
-        markup = telebot.types.InlineKeyboardMarkup(row_width=1)
-        join_btn = telebot.types.InlineKeyboardButton("👉 Join My Channel", url=CHANNEL_LINK)
-        markup.add(join_btn)
-
         bot.reply_to(
             message,
             "🚫 <b>You must join the channel to use this bot!</b>",
             parse_mode='HTML',
-            reply_markup=markup
+            reply_markup=force_subscribe_markup()
+        )
+        return
+
+    bot.reply_to(message,
+                 "🛠 <b>Available Commands</b>\n\n"
+                 "/start — Restart bot + join verification\n"
+                 "/help — Show this help message\n"
+                 "/status — Check bot status\n\n"
+                 "📌 <b>How to Use the Bot:</b>\n"
+                 "1. Tap <b>👉 Join My Channel</b>\n"
+                 "2. Join the channel\n"
+                 "3. Tap <b>✅ I Joined - Verify</b>\n\n"
+                 "✅ After verification, just send your <b>email:password</b> combos!\n"
+                 "I will check them one by one with safety delay.",
+                 parse_mode='HTML')
+
+
+@bot.message_handler(commands=['status'])
+def status(message):
+    if not is_subscribed(message.from_user.id):
+        bot.reply_to(
+            message,
+            "🚫 <b>You must join the channel to use this bot!</b>",
+            parse_mode='HTML',
+            reply_markup=force_subscribe_markup()
+        )
+        return
+
+    bot.reply_to(message,
+                 "✅ <b>Bot Status: Running Perfectly</b>\n\n"
+                 "🔥 Professional Mode: Active\n"
+                 "⏳ Check Delay: 12 seconds\n"
+                 "📡 Force Subscribe: Enabled\n\n"
+                 "Ready to check ExpressVPN combos!",
+                 parse_mode='HTML')
+
+@bot.message_handler(commands=['status'])
+def status(message):
+    if not is_subscribed(message.from_user.id):
+        bot.reply_to(
+            message,
+            "🚫 <b>You must join the channel to use this bot!</b>",
+            parse_mode='HTML',
+            reply_markup=force_subscribe_markup()
+        )
+        return
+
+    bot.reply_to(message,
+                 "✅ <b>Bot Status: Running Perfectly</b>\n\n"
+                 "⏳ Check Delay: 12 seconds\n\n"
+                 "Ready to check ExpressVPN combos!",
+                 parse_mode='HTML')
+
+@bot.message_handler(func=lambda m: True)
+def handle_message(message):
+    if not is_subscribed(message.from_user.id):
+        bot.reply_to(
+            message,
+            "🚫 <b>You must join the channel to use this bot!</b>\n\n"
+            "Please join first, then tap the <b>✅ Verify</b> button.",
+            parse_mode='HTML',
+            reply_markup=force_subscribe_markup()
         )
         return
 
