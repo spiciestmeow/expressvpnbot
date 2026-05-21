@@ -254,7 +254,7 @@ class ExpressVPNChecker:
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # ================== FORCE SUBSCRIBE ==================
-CHANNEL_USERNAME = '@yourchannel'          # ← CHANGE THIS TO YOUR CHANNEL
+CHANNEL_USERNAME = 'caysredirect'
 CHANNEL_LINK = f"https://t.me/{CHANNEL_USERNAME.replace('@', '')}"
 # =====================================================
 
@@ -325,7 +325,7 @@ def help_command(message):
 
 @bot.message_handler(commands=['status'])
 def status(message):
-    bot.reply_to(message, "✅ <b>Bot is running perfectly</b>\nRender + Flask + Professional Mode", parse_mode='HTML')
+    bot.reply_to(message, "✅ <b>Bot is running perfectly</b>", parse_mode='HTML')
 
 @bot.message_handler(func=lambda m: True)
 def handle_message(message):
